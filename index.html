@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vital Rust - Wipe Takvimi</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<style>
+:root{--bg:#E9ECF5;--panel:#F7F8FC;--ink:#1E2140;--mute:#5B6085;--line:#CFD3E6;--brand:#5865F2;--on-brand:#fff;--ok:#1E9E68;--warn:#B8740F;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1A1D33;--panel:#232744;--ink:#E8EAFB;--mute:#9AA0CC;--line:#363B63;--brand:#7B86FF;--on-brand:#12142B;--ok:#4FD39A;--warn:#F2B35A}}
+:root[data-theme="dark"]{--bg:#1A1D33;--panel:#232744;--ink:#E8EAFB;--mute:#9AA0CC;--line:#363B63;--brand:#7B86FF;--on-brand:#12142B;--ok:#4FD39A;--warn:#F2B35A}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ff,"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif);font-size:var(--fs,16px);line-height:1.55}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;max-width:1100px;margin:0 auto}
+nav{padding:24px 16px;border-right:1px solid var(--line)}
+.srv{display:flex;gap:12px;align-items:center;margin-bottom:24px}
+.logo{width:44px;height:44px;border-radius:14px;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:800;font-size:20px}
+.srv b{display:block;font-weight:800;font-size:17px;line-height:1.2}
+.srv small{color:var(--mute)}
+nav a{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-weight:600}
+nav a::before{content:"#";font-weight:400;opacity:.7}
+nav a:hover{background:var(--panel);color:var(--ink)}
+nav a[aria-current="page"]{background:var(--panel);color:var(--ink);box-shadow:inset 3px 0 0 var(--brand)}
+nav a:focus-visible,button:focus-visible,.join:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.theme{margin-top:20px;background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+main{padding:32px 36px 56px;min-width:0}
+h1{font-size:clamp(34px,6vw,56px);line-height:1.02;font-weight:800;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:22px;margin:0 0 14px;font-weight:800}
+.lead{color:var(--mute);max-width:52ch;margin:0 0 20px}
+.hero{margin-bottom:28px}
+.join{display:inline-block;background:var(--brand);color:var(--on-brand);padding:12px 22px;border-radius:10px;font-weight:800;text-decoration:none}
+
+.timers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:28px}
+.next{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:inset 4px 0 0 var(--brand)}
+.next small{display:block;color:var(--mute);font-weight:600}
+.cd{font-size:clamp(22px,3.5vw,32px);font-weight:800;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0}
+.when{color:var(--mute);font-size:14px}
+.badge{display:inline-block;padding:1px 10px;border-radius:99px;border:1px solid var(--brand);color:var(--brand);font-size:12px;font-weight:600;margin-top:6px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:32px}
+.stats div{padding:16px 18px;border-right:1px solid var(--line)}
+.stats div:last-child{border-right:0}
+.stats b{display:block;font-size:26px;font-weight:800}
+.stats span{color:var(--mute);font-size:14px}
+.view{display:none}.view.on{display:block}
+.item,.w{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.item time{flex:0 0 64px;color:var(--brand);font-weight:800}
+.w time{flex:0 0 130px;font-weight:800}
+.w.past{opacity:.55}
+.item p,.w p{margin:2px 0 0;color:var(--mute)}
+.empty{color:var(--mute);padding:14px 0}
+.src{margin-top:20px;color:var(--mute);font-size:14px}
+ol{padding-left:22px;max-width:62ch}ol li{margin-bottom:14px}.en{color:var(--mute)}
+.theme[aria-expanded="true"]{color:var(--ink);border-color:var(--brand)}
+#set{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:grid;gap:14px;font-size:14px;width:100%}
+#set[hidden]{display:none}
+#set .lbl{display:block;color:var(--mute);font-weight:600;margin-bottom:6px}
+.seg,.sw{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seg button,.reset{background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:2px}
+.sw input{width:34px;height:26px;border:0;padding:0;background:none;cursor:pointer}
+@media (max-width:760px){.app{grid-template-columns:1fr}nav{border-right:0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px;padding:16px}.srv{width:100%;margin-bottom:8px}.theme{margin:0 0 0 auto}main{padding:24px 18px 48px}.stats div{border-right:0;border-bottom:1px solid var(--line)}.w{flex-direction:column;gap:2px}}
+@media (prefers-reduced-motion:no-preference){.view.on{animation:in .2s ease-out}@keyframes in{from{opacity:0}to{opacity:1}}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav aria-label="Kanallar">
+  <div class="srv"><div class="logo" id="logo"></div><div><b id="sname"></b><small id="stag"></small></div></div>
+  <a href="#genel" data-v="genel">genel</a>
+  <a href="#duyurular" data-v="duyurular">duyurular</a>
+  <a href="#kurallar" data-v="kurallar">kurallar</a>
+  <a href="#wipe" data-v="wipe">wipe-takvimi</a>
+  <button class="theme" id="theme" type="button" aria-expanded="false" aria-controls="set">Ayarlar</button>
+  <div id="set" hidden>
+    <div><span class="lbl">Tema</span><div class="seg" data-k="theme"><button type="button" data-v="system">Sistem</button><button type="button" data-v="light">Açık</button><button type="button" data-v="dark">Koyu</button></div></div>
+    <div><span class="lbl">Vurgu rengi</span><div class="sw" id="sw"></div></div>
+    <div><span class="lbl">Yazı tipi</span><div class="seg" data-k="font"><button type="button" data-v="grotesk">Varsayılan</button><button type="button" data-v="sistem">Sistem</button><button type="button" data-v="serif">Serif</button><button type="button" data-v="mono">Mono</button></div></div>
+    <div><span class="lbl">Yazı boyutu</span><div class="seg" data-k="size"><button type="button" data-v="14">Küçük</button><button type="button" data-v="16">Normal</button><button type="button" data-v="18">Büyük</button></div></div>
+    <button class="reset" id="reset" type="button">Varsayılana dön</button>
+  </div>
+</nav>
+<main>
+  <section class="view" id="genel">
+    <div class="hero"><h1 id="h1"></h1><p class="lead" id="desc"></p><a class="join" id="join" href="#">Discord'a Katıl</a></div>
+    
+    <h2>Sunucu Wipe Sayaçları</h2>
+    <div class="timers-grid" id="timersGrid"></div>
+
+    <div class="stats" id="stats"></div>
+    <h2>Son Duyurular</h2><div id="newsmini"></div>
+  </section>
+  <section class="view" id="duyurular"><h2>Duyurular</h2><div id="news"></div></section>
+  <section class="view" id="kurallar"><h2>Sunucu Kuralları / Rules</h2><ol id="rules"></ol></section>
+  <section class="view" id="wipe"><h2>Vital Rust - Wipe Takvimi (Medium, 3X, Monthly)</h2><div id="wipes"></div><p class="src" id="src"></p></section>
+</main>
+</div>
+<script>
+var CFG={
+  api:"",
+  name:"Vital Rust",
+  tag:"Medium & 3X & Monthly",
+  invite:"https://discord.gg/vitalrust",
+  desc:"Türkiye'nin en gelişmiş Rust deneyimi. Medium, 3X ve Monthly sunucu wipe takvimi ve duyurular.",
+  stats:[
+    ["3x Server","Haftalık"],
+    ["Medium","Haftalık"],
+    ["Monthly","Aylık Force"]
+  ],
+  announcements:[
+    {date:"2026-11-01T21:00:00",title:"Sunucu Güncellemesi",tag:"Genel",text:"Yeni sezon içerikleri ve optimizasyonlar aktif edildi."}
+  ],
+  rules:[
+    ["Hile, 3. parti yazılım ve macro kesinlikle yasaktır.","No cheating, scripts or third-party software."],
+    ["Grup sınırlarına (Max team limit) kesinlikle uyulmalıdır.","Strictly adhere to group limits."]
+  ],
+  wipes:[
+    {at:"2026-12-05T20:00:00",category:"3X",type:"3X Wipe",note:"3X Sunucusu haftalık harita ve blueprint wipe."},
+    {at:"2026-12-07T20:00:00",category:"Medium",type:"Medium Wipe",note:"Medium sunucu harita değişimi ve wipe."},
+    {at:"2026-12-10T21:00:00",category:"Monthly",type:"Monthly Force Wipe",note:"Global Rust güncellemesi ile birlikte tüm Monthly sunucu sıfırlaması."}
+  ]
+};
+
+var $=function(i){return document.getElementById(i)};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function dlong(d){return d.toLocaleString("tr-TR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
+function dshort(d){return d.toLocaleDateString("tr-TR",{day:"numeric",month:"short"})}
+
+function getNextWipesByCategory(){
+  var now=Date.now();
+  var categories=["3X", "Medium", "Monthly"];
+  return categories.map(function(cat){
+    var list=(CFG.wipes||[]).filter(function(w){return w.category===cat && new Date(w.at)>now}).sort(function(a,b){return new Date(a.at)-new Date(b.at)});
+    return {category: cat, next: list[0] || (CFG.wipes||[]).find(function(w){return w.category===cat}) || null};
+  });
+}
+
+function annHTML(a,n){return a.slice(0,n).map(function(x){return'<div class="item"><time>'+esc(dshort(new Date(x.date)))+'</time><div><b>'+esc(x.title)+(x.tag?'<span class="badge">'+esc(x.tag)+'</span>':'')+'</b><p>'+esc(x.text)+'</p></div></div>'}).join("")||'<p class="empty">Henüz duyuru yok.</p>'}
+
+function render(){
+  $("sname").textContent=CFG.name;$("stag").textContent=CFG.tag;$("logo").textContent=CFG.name.charAt(0);
+  $("h1").textContent=CFG.name;$("desc").textContent=CFG.desc;$("join").href=CFG.invite;
+  $("stats").style.display=CFG.stats.length?"":"none";$("stats").innerHTML=CFG.stats.map(function(s){return"<div><b>"+esc(s[0])+"</b><span>"+esc(s[1])+"</span></div>"}).join("");
+  $("newsmini").innerHTML=annHTML(CFG.announcements,2);$("news").innerHTML=annHTML(CFG.announcements,50);
+  $("rules").innerHTML=CFG.rules.map(function(r){return"<li><b>"+esc(r[0])+"</b><br><span class=\"en\">"+esc(r[1])+"</span></li>"}).join("");
+  
+  var nextWipes=getNextWipesByCategory();
+  $("timersGrid").innerHTML=nextWipes.map(function(item, idx){
+    if(!item.next){
+      return '<div class="next"><small>'+item.category+' Sunucusu</small><div class="when" style="margin-top:10px;">Planlanmış wipe yok.</div></div>';
+    }
+    return '<div class="next"><small>'+item.category+' Sunucusu</small><div class="cd" id="cd_'+idx+'">Yükleniyor...</div><div class="when">'+esc(dlong(new Date(item.next.at)))+'<br><span class="badge">'+esc(item.next.type)+'</span></div></div>';
+  }).join("");
+
+  var now=Date.now(),all=(CFG.wipes||[]).slice().sort(function(a,b){return new Date(a.at)-new Date(b.at)});
+  $("wipes").innerHTML=all.map(function(w){var d=new Date(w.at);return'<div class="w'+(d<now?" past":"")+'"><time>'+esc(dshort(d))+'<br><small>'+esc(d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}))+'</small></time><div><b>['+esc(w.category||'Genel')+'] '+esc(w.type)+'</b>'+(w.note?'<p>'+esc(w.note)+'</p>':'')+'</div></div>'}).join("")||'<p class="empty">Henüz wipe günü eklenmedi.</p>';
+  $("src").textContent=CFG.live?"Wipe günleri harici API üzerinden otomatik güncelleniyor.":"Wipe takvimi kod içerisindeki ayarlardan yönetiliyor.";
+  tick();
+}
+
+function tick(){
+  var nextWipes=getNextWipesByCategory();
+  nextWipes.forEach(function(item, idx){
+    var e=$("cd_"+idx);
+    if(!item.next || !e) return;
+    var s=Math.floor((new Date(item.next.at)-Date.now())/1000);
+    if(s<=0){ e.textContent="Wipe Zamanı!"; return; }
+    var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),c=s%60,p=function(x){return(x<10?"0":"")+x};
+    e.textContent=(d?d+" gün ":"")+p(h)+":"+p(m)+":"+p(c);
+  });
+}
+setInterval(tick,1000);
+
+function load(){if(!CFG.api)return;fetch(CFG.api).then(function(r){return r.json()}).then(function(d){Object.assign(CFG,d);CFG.live=true;render()}).catch(function(){})}
+render();load();if(CFG.api)setInterval(load,60000);
+
+var V=["genel","duyurular","kurallar","wipe"];
+function show(){var h=location.hash.slice(1);if(V.indexOf(h)<0)h="genel";
+  V.forEach(function(v){$(v).classList.toggle("on",v===h)});
+  document.querySelectorAll("nav a").forEach(function(a){if(a.dataset.v===h)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")})}
+window.addEventListener("hashchange",show);show();
+
+var DEF={theme:"system",accent:"",font:"grotesk",size:"16"};
+var FONTS={grotesk:null,sistem:'system-ui,-apple-system,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',mono:'ui-monospace,Menlo,Consolas,monospace'};
+var COLORS=["#5865F2","#E5484D","#1E9E68","#D97706","#0EA5E9","#C026D3"];
+var S=Object.assign({},DEF);
+try{var raw=localStorage.getItem("panel-ayar");if(raw)Object.assign(S,JSON.parse(raw))}catch(x){}
+function lum(h){var n=parseInt(h.slice(1),16),c=[n>>16&255,n>>8&255,n&255].map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+$("sw").innerHTML=COLORS.map(function(c){return'<button type="button" data-c="'+c+'" style="background:'+c+'" aria-label="Vurgu rengi '+c+'"></button>'}).join("")+'<input type="color" id="cc" value="#5865f2" aria-label="Özel renk seç">';
+function apply(){var r=document.documentElement;
+  if(S.theme==="system")r.removeAttribute("data-theme");else r.dataset.theme=S.theme;
+  if(S.accent){r.style.setProperty("--brand",S.accent);r.style.setProperty("--on-brand",lum(S.accent)>.4?"#12142B":"#fff")}else{r.style.removeProperty("--brand");r.style.removeProperty("--on-brand")}
+  if(FONTS[S.font])r.style.setProperty("--ff",FONTS[S.font]);else r.style.removeProperty("--ff");
+  r.style.setProperty("--fs",S.size+"px");
+  document.querySelectorAll("#set .seg").forEach(function(g){g.querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",String(S[g.dataset.k]===b.dataset.v))})});
+  document.querySelectorAll("#sw button").forEach(function(b){b.setAttribute("aria-pressed",String(S.accent===b.dataset.c))});
+  try{localStorage.setItem("panel-ayar",JSON.stringify(S))}catch(x){}}
+$("theme").addEventListener("click",function(){var o=$("set").hidden;$("set").hidden=!o;this.setAttribute("aria-expanded",String(o))});
+$("set").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  if(b.id==="reset")S=Object.assign({},DEF);
+  else if(b.dataset.c)S.accent=b.dataset.c;
+  else if(b.dataset.v)S[b.parentNode.dataset.k]=b.dataset.v;
+  apply()});
+$("cc").addEventListener("input",function(){S.accent=this.value;apply()});
+apply();
+</script>
+</body>
+</html>
